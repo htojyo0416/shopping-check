@@ -65,6 +65,33 @@
       line-height: 1.15;
     }
 
+    .profile-row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 10px;
+    }
+
+    .profile-label {
+      color: var(--muted);
+      font-size: .9rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .profile-select {
+      width: 100%;
+      min-height: 40px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-strong);
+      color: var(--ink);
+      outline: none;
+      font-weight: 750;
+    }
+
     .summary {
       display: flex;
       gap: 8px;
@@ -106,7 +133,7 @@
       outline: none;
     }
 
-    .search:focus, .field:focus {
+    .search:focus, .field:focus, .profile-select:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(31, 122, 104, .16);
     }
@@ -392,6 +419,15 @@
   <main class="app">
     <header class="topbar">
       <h1>買い物チェック</h1>
+      <label class="profile-row">
+        <span class="profile-label">ユーザー</span>
+        <select id="profile-select" class="profile-select" aria-label="ユーザーを切り替え">
+          <option value="hiroshi">ひろし</option>
+          <option value="hiromi">ひろみ</option>
+          <option value="aoi">あおい</option>
+          <option value="itsuki">いつき</option>
+        </select>
+      </label>
       <div class="summary" aria-live="polite">
         <div class="pill">買うもの <strong id="count-needed">0</strong></div>
         <div class="pill">購入済み <strong id="count-bought">0</strong></div>
@@ -707,10 +743,21 @@
       { name: "二股タップ", category: "電池・電球・電気小物", favorite: false }
     ];
 
-    const storageKey = "shopping-check-app-v2";
+    const users = [
+      { key: "hiroshi", name: "ひろし" },
+      { key: "hiromi", name: "ひろみ" },
+      { key: "aoi", name: "あおい" },
+      { key: "itsuki", name: "いつき" }
+    ];
+
+    const activeUserKey = "shopping-check-active-user";
+    const legacyStorageKey = "shopping-check-app-v2";
+    const storageKeyFor = (userKey) => `shopping-check-app-v3-${userKey}`;
     const byId = (id) => document.getElementById(id);
     const normalize = (value) => value.trim().replace(/\s+/g, " ").toLowerCase();
-    let state = loadState();
+    let currentUser = localStorage.getItem(activeUserKey) || users[0].key;
+    if (!users.some((user) => user.key === currentUser)) currentUser = users[0].key;
+    let state = loadState(currentUser);
     let toastTimer;
 
     function makeProduct(raw) {
@@ -742,14 +789,20 @@
       return [...map.values()];
     }
 
-    function loadState() {
-      const fallback = {
+    function getFallbackState() {
+      return {
         products: mergeProducts(defaultProducts),
         closedCategories: {},
         shoppingClosed: false
       };
+    }
+
+    function loadState(userKey) {
+      const fallback = getFallbackState();
       try {
-        const saved = JSON.parse(localStorage.getItem(storageKey));
+        const savedText = localStorage.getItem(storageKeyFor(userKey));
+        const legacyText = userKey === "hiroshi" ? localStorage.getItem(legacyStorageKey) : null;
+        const saved = JSON.parse(savedText || legacyText);
         if (!saved || !Array.isArray(saved.products)) return fallback;
         return {
           products: mergeProducts(saved.products),
@@ -762,7 +815,7 @@
     }
 
     function saveState() {
-      localStorage.setItem(storageKey, JSON.stringify(state));
+      localStorage.setItem(storageKeyFor(currentUser), JSON.stringify(state));
     }
 
     function productSort(a, b) {
@@ -803,6 +856,7 @@
       const root = byId("products-root");
       const categories = [...new Set(state.products.map((product) => product.category))];
 
+      byId("profile-select").value = currentUser;
       byId("category-list").innerHTML = categories.map((category) => `<option value="${escapeHtml(category)}"></option>`).join("");
 
       const sections = [];
@@ -960,6 +1014,16 @@
       toastTimer = setTimeout(() => toast.classList.remove("show"), 1800);
     }
 
+    byId("profile-select").addEventListener("change", (event) => {
+      saveState();
+      currentUser = event.target.value;
+      localStorage.setItem(activeUserKey, currentUser);
+      state = loadState(currentUser);
+      byId("search").value = "";
+      const user = users.find((item) => item.key === currentUser);
+      showToast(`${user.name}に切り替えました`);
+      render();
+    });
     byId("search").addEventListener("input", render);
     byId("add-form").addEventListener("submit", addProduct);
     byId("clear-bought").addEventListener("click", () => {
