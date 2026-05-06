@@ -112,9 +112,14 @@
       color: var(--muted);
       font-size: .9rem;
       white-space: nowrap;
+      text-decoration: none;
     }
 
     .pill strong { color: var(--ink); }
+
+    button.pill {
+      appearance: none;
+    }
 
     .controls {
       display: grid;
@@ -202,6 +207,10 @@
     .layout {
       display: grid;
       gap: 14px;
+    }
+
+    .shopping-pane {
+      scroll-margin-top: 104px;
     }
 
     .product-stack {
@@ -429,7 +438,7 @@
         </select>
       </label>
       <div class="summary" aria-live="polite">
-        <div class="pill">買うもの <strong id="count-needed">0</strong></div>
+        <button id="jump-shopping" class="pill" type="button">買うもの <strong id="count-needed">0</strong></button>
         <div class="pill">購入済み <strong id="count-bought">0</strong></div>
         <div class="pill">登録商品 <strong id="count-products">0</strong></div>
       </div>
@@ -454,7 +463,7 @@
     <div class="layout">
       <section id="products-root" class="product-stack" aria-label="商品リスト"></section>
 
-      <aside class="shopping-pane section" aria-label="買うものリスト">
+      <aside id="shopping-section" class="shopping-pane section" aria-label="買うものリスト">
         <button class="section-head" type="button" data-static-toggle="shopping">
           <span class="section-title"><span>買うものリスト</span><span id="shopping-badge" class="badge">0</span></span>
           <span class="chevron">⌄</span>
@@ -1047,6 +1056,13 @@
     document.querySelector("[data-static-toggle='shopping']").addEventListener("click", () => {
       state.shoppingClosed = !state.shoppingClosed;
       render();
+    });
+    byId("jump-shopping").addEventListener("click", () => {
+      state.shoppingClosed = false;
+      render();
+      requestAnimationFrame(() => {
+        byId("shopping-section").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     });
 
     render();
