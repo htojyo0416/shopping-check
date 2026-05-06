@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1f7a68">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="買い物チェック">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>買い物チェック</title>
+  <style>
+    :root {
+      --bg: #f7f5ef;
+      --surface: #fffdf7;
+      --surface-strong: #ffffff;
+      --ink: #24211b;
+      --muted: #706b61;
+      --line: #ded8ca;
+      --accent: #1f7a68;
+      --accent-dark: #155d50;
+      --accent-soft: #dcefe9;
+      --danger: #b73636;
+      --shadow: 0 10px 30px rgba(56, 45, 28, .09);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    button, input { font: inherit; }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 16px 16px 96px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      margin: -16px -16px 14px;
+      padding: 14px 16px 12px;
+      background: rgba(247, 245, 239, .94);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(222, 216, 202, .75);
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(1.45rem, 6vw, 2rem);
+      letter-spacing: 0;
+      line-height: 1.15;
+    }
+
+    .summary {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .pill {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 34px;
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface-strong);
+      color: var(--muted);
+      font-size: .9rem;
+      white-space: nowrap;
+    }
+
+    .pill strong { color: var(--ink); }
+
+    .controls {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .search, .field {
+      width: 100%;
+      min-height: 46px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-strong);
+      color: var(--ink);
+      outline: none;
+    }
+
+    .search:focus, .field:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(31, 122, 104, .16);
+    }
+
+    .add-panel, .section {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .add-panel {
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+
+    .add-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .checkline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 42px;
+      color: var(--muted);
+      user-select: none;
+    }
+
+    .checkline input,
+    .item input[type="checkbox"],
+    .buy-row input {
+      width: 22px;
+      height: 22px;
+      accent-color: var(--accent);
+    }
+
+    .primary, .secondary {
+      min-height: 44px;
+      border-radius: 8px;
+      font-weight: 700;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .primary:active {
+      transform: translateY(1px);
+      background: var(--accent-dark);
+    }
+
+    .secondary {
+      background: #f0ece1;
+      color: var(--ink);
+    }
+
+    .secondary.danger {
+      background: #fae7e4;
+      color: var(--danger);
+    }
+
+    .layout {
+      display: grid;
+      gap: 14px;
+    }
+
+    .product-stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .section {
+      overflow: hidden;
+    }
+
+    .section-head {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 13px;
+      background: var(--surface-strong);
+      color: var(--ink);
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      font-weight: 800;
+    }
+
+    .section-title span:first-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 26px;
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      font-size: .82rem;
+      font-weight: 800;
+    }
+
+    .chevron {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: #f0ece1;
+      color: var(--muted);
+      transition: transform .16s ease;
+    }
+
+    .section.is-closed .chevron { transform: rotate(-90deg); }
+    .section.is-closed .section-body { display: none; }
+
+    .section-body {
+      padding: 7px;
+    }
+
+    .items {
+      display: grid;
+      gap: 7px;
+    }
+
+    .item {
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      align-items: center;
+      gap: 9px;
+      min-height: 48px;
+      padding: 8px 9px;
+      border-radius: 8px;
+      background: var(--surface-strong);
+    }
+
+    .item-name {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      line-height: 1.25;
+      font-weight: 650;
+    }
+
+    .item-meta {
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 500;
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: #f0ece1;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .icon-btn.is-fav {
+      background: #fff1ba;
+      color: #8a6400;
+    }
+
+    .icon-btn.danger {
+      background: #fae7e4;
+      color: var(--danger);
+    }
+
+    .buy-list {
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+    }
+
+    .buy-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 9px;
+      padding: 10px;
+      border-radius: 8px;
+      background: var(--surface-strong);
+      border: 1px solid var(--line);
+    }
+
+    .buy-name {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      font-weight: 750;
+    }
+
+    .buy-row.is-bought .buy-name {
+      color: var(--muted);
+      text-decoration: line-through;
+    }
+
+    .empty {
+      padding: 18px 12px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 0 10px 10px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      z-index: 40;
+      width: min(calc(100vw - 28px), 420px);
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #24211b;
+      color: white;
+      box-shadow: 0 14px 32px rgba(0,0,0,.25);
+      transform: translate(-50%, 80px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform .2s ease, opacity .2s ease;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .toast.show {
+      transform: translate(-50%, 0);
+      opacity: 1;
+    }
+
+    @media (min-width: 760px) {
+      .app {
+        padding: 22px 22px 40px;
+      }
+
+      .topbar {
+        margin: -22px -22px 18px;
+        padding: 18px 22px 14px;
+      }
+
+      .add-grid {
+        grid-template-columns: 1.2fr .85fr auto auto;
+        align-items: center;
+      }
+
+      .layout {
+        grid-template-columns: minmax(0, 1.1fr) minmax(310px, .7fr);
+        align-items: start;
+      }
+
+      .shopping-pane {
+        position: sticky;
+        top: 94px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <h1>買い物チェック</h1>
+      <div class="summary" aria-live="polite">
+        <div class="pill">買うもの <strong id="count-needed">0</strong></div>
+        <div class="pill">購入済み <strong id="count-bought">0</strong></div>
+        <div class="pill">登録商品 <strong id="count-products">0</strong></div>
+      </div>
+    </header>
+
+    <section class="controls" aria-label="検索と追加">
+      <input id="search" class="search" type="search" placeholder="商品を検索" autocomplete="off">
+      <form id="add-form" class="add-panel">
+        <div class="add-grid">
+          <input id="new-name" class="field" type="text" placeholder="商品名を追加" autocomplete="off" required>
+          <input id="new-category" class="field" type="text" list="category-list" placeholder="カテゴリ" required>
+          <datalist id="category-list"></datalist>
+          <label class="checkline">
+            <input id="new-favorite" type="checkbox">
+            ★ よく買う
+          </label>
+          <button class="primary" type="submit">追加</button>
+        </div>
+      </form>
+    </section>
+
+    <div class="layout">
+      <section id="products-root" class="product-stack" aria-label="商品リスト"></section>
+
+      <aside class="shopping-pane section" aria-label="買うものリスト">
+        <button class="section-head" type="button" data-static-toggle="shopping">
+          <span class="section-title"><span>買うものリスト</span><span id="shopping-badge" class="badge">0</span></span>
+          <span class="chevron">⌄</span>
+        </button>
+        <div class="section-body" id="shopping-body">
+          <div id="shopping-list" class="buy-list"></div>
+          <div class="actions">
+            <button id="clear-bought" class="secondary" type="button">購入済み削除</button>
+            <button id="clear-all" class="secondary danger" type="button">全て外す</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const defaultProducts = [
+      { name: "たまご6個", category: "卵・豆腐・こんにゃく系", favorite: false },
+      { name: "たまご10個", category: "卵・豆腐・こんにゃく系", favorite: false },
+      { name: "こんにゃく", category: "卵・豆腐・こんにゃく系", favorite: false },
+      { name: "しらたき", category: "卵・豆腐・こんにゃく系", favorite: false },
+      { name: "焼き豆腐", category: "卵・豆腐・こんにゃく系", favorite: false },
+      { name: "木綿豆腐", category: "卵・豆腐・こんにゃく系", favorite: false },
+      { name: "油揚げ", category: "卵・豆腐・こんにゃく系", favorite: false },
+      { name: "しめじ", category: "きのこ", favorite: false },
+      { name: "しいたけ", category: "きのこ", favorite: false },
+      { name: "まいたけ", category: "きのこ", favorite: true },
+      { name: "エリンギ", category: "きのこ", favorite: false },
+      { name: "えのき", category: "きのこ", favorite: false },
+      { name: "じゃがいも", category: "野菜", favorite: false },
+      { name: "玉ねぎ", category: "野菜", favorite: false },
+      { name: "人参", category: "野菜", favorite: true },
+      { name: "サンチュ", category: "野菜", favorite: false },
+      { name: "しそ", category: "野菜", favorite: false },
+      { name: "三つ葉", category: "野菜", favorite: false },
+      { name: "鍋野菜", category: "野菜", favorite: false },
+      { name: "キャベツ", category: "野菜", favorite: false },
+      { name: "もやし", category: "野菜", favorite: true },
+      { name: "大根", category: "野菜", favorite: true },
+      { name: "白菜", category: "野菜", favorite: true },
+      { name: "春菊", category: "野菜", favorite: false },
+      { name: "ほうれん草", category: "野菜", favorite: false },
+      { name: "なす", category: "野菜", favorite: false },
+      { name: "カボチャ", category: "野菜", favorite: false },
+      { name: "生姜", category: "野菜", favorite: false },
+      { name: "にんにく", category: "野菜", favorite: false },
+      { name: "ねぎ", category: "野菜", favorite: true },
+      { name: "カットネギ", category: "野菜", favorite: false },
+      { name: "千切りキャベツ", category: "野菜", favorite: false },
+      { name: "きゅうり", category: "野菜", favorite: false },
+      { name: "レタス", category: "野菜", favorite: false },
+      { name: "さつまいも", category: "野菜", favorite: false },
+      { name: "カットごぼう", category: "野菜", favorite: false },
+      { name: "里芋", category: "野菜", favorite: false },
+      { name: "豚汁のもと", category: "野菜", favorite: false },
+      { name: "カットキャベツ", category: "野菜", favorite: false },
+      { name: "バナナ", category: "果物", favorite: false },
+      { name: "マカロニ", category: "麺・粉・米・主食系", favorite: false },
+      { name: "焼きそば", category: "麺・粉・米・主食系", favorite: false },
+      { name: "そば", category: "麺・粉・米・主食系", favorite: false },
+      { name: "玄米", category: "麺・粉・米・主食系", favorite: false },
+      { name: "餅", category: "麺・粉・米・主食系", favorite: false },
+      { name: "小麦粉", category: "麺・粉・米・主食系", favorite: false },
+      { name: "片栗粉", category: "麺・粉・米・主食系", favorite: false },
+      { name: "パスタ", category: "麺・粉・米・主食系", favorite: false },
+      { name: "たこ焼き粉", category: "麺・粉・米・主食系", favorite: false },
+      { name: "お好み焼き", category: "麺・粉・米・主食系", favorite: false },
+      { name: "パン粉", category: "麺・粉・米・主食系", favorite: false },
+      { name: "ホットケーキのもと", category: "麺・粉・米・主食系", favorite: false },
+      { name: "ピザ生地", category: "麺・粉・米・主食系", favorite: false },
+      { name: "レトルトカレー", category: "麺・粉・米・主食系", favorite: false },
+      { name: "めんつゆ", category: "調味料・たれ", favorite: false },
+      { name: "白だし", category: "調味料・たれ", favorite: false },
+      { name: "醤油", category: "調味料・たれ", favorite: false },
+      { name: "ラー油", category: "調味料・たれ", favorite: false },
+      { name: "みりん", category: "調味料・たれ", favorite: false },
+      { name: "料理酒", category: "調味料・たれ", favorite: false },
+      { name: "お酢", category: "調味料・たれ", favorite: false },
+      { name: "ごま", category: "調味料・たれ", favorite: false },
+      { name: "カレー粉", category: "調味料・たれ", favorite: false },
+      { name: "カレールー", category: "調味料・たれ", favorite: false },
+      { name: "ビーフシチュー", category: "調味料・たれ", favorite: false },
+      { name: "ポン酢", category: "調味料・たれ", favorite: false },
+      { name: "マヨネーズ", category: "調味料・たれ", favorite: false },
+      { name: "ゴマドレ", category: "調味料・たれ", favorite: false },
+      { name: "シーザーサラダドレ", category: "調味料・たれ", favorite: false },
+      { name: "豆板醤", category: "調味料・たれ", favorite: false },
+      { name: "甜麺醤", category: "調味料・たれ", favorite: false },
+      { name: "コチュジャン", category: "調味料・たれ", favorite: false },
+      { name: "オイスターソース", category: "調味料・たれ", favorite: false },
+      { name: "唐辛子", category: "調味料・たれ", favorite: false },
+      { name: "ダシダ", category: "調味料・たれ", favorite: false },
+      { name: "わさび", category: "調味料・たれ", favorite: false },
+      { name: "ソース", category: "調味料・たれ", favorite: false },
+      { name: "お好みソース", category: "調味料・たれ", favorite: false },
+      { name: "ケチャップ", category: "調味料・たれ", favorite: false },
+      { name: "ナンプラー", category: "調味料・たれ", favorite: false },
+      { name: "ニンニクチューブ", category: "調味料・たれ", favorite: false },
+      { name: "マキシマム", category: "調味料・たれ", favorite: false },
+      { name: "生姜チューブ", category: "調味料・たれ", favorite: false },
+      { name: "からし", category: "調味料・たれ", favorite: false },
+      { name: "塩胡椒", category: "調味料・たれ", favorite: false },
+      { name: "辛くないラー油", category: "調味料・たれ", favorite: false },
+      { name: "粗挽き黒胡椒", category: "調味料・たれ", favorite: false },
+      { name: "すき焼きのタレ", category: "調味料・たれ", favorite: false },
+      { name: "味噌", category: "調味料・たれ", favorite: false },
+      { name: "中華のもと", category: "調味料・たれ", favorite: false },
+      { name: "和風だし", category: "調味料・たれ", favorite: false },
+      { name: "コンソメ", category: "調味料・たれ", favorite: false },
+      { name: "ガーリックパウダー", category: "調味料・たれ", favorite: false },
+      { name: "ローリエ", category: "調味料・たれ", favorite: false },
+      { name: "サフラン", category: "調味料・たれ", favorite: false },
+      { name: "花胡椒", category: "調味料・たれ", favorite: false },
+      { name: "レモン汁", category: "調味料・たれ", favorite: false },
+      { name: "大学いもたれ", category: "調味料・たれ", favorite: false },
+      { name: "グラタンのもと", category: "調味料・たれ", favorite: false },
+      { name: "麻婆豆腐の素", category: "調味料・たれ", favorite: false },
+      { name: "サラダ油", category: "油・乾物・缶詰", favorite: false },
+      { name: "オリーブ油", category: "油・乾物・缶詰", favorite: false },
+      { name: "ごま油", category: "油・乾物・缶詰", favorite: false },
+      { name: "鰹節", category: "油・乾物・缶詰", favorite: false },
+      { name: "ツナ缶", category: "油・乾物・缶詰", favorite: false },
+      { name: "ホールトマト", category: "油・乾物・缶詰", favorite: false },
+      { name: "サバ水煮", category: "油・乾物・缶詰", favorite: false },
+      { name: "天かす", category: "油・乾物・缶詰", favorite: false },
+      { name: "味付け海苔", category: "油・乾物・缶詰", favorite: false },
+      { name: "塩昆布", category: "油・乾物・缶詰", favorite: false },
+      { name: "寿司用のり", category: "油・乾物・缶詰", favorite: false },
+      { name: "海苔茶漬け", category: "油・乾物・缶詰", favorite: false },
+      { name: "グラニュー糖", category: "油・乾物・缶詰", favorite: false },
+      { name: "砂糖", category: "油・乾物・缶詰", favorite: false },
+      { name: "塩", category: "油・乾物・缶詰", favorite: false },
+      { name: "コーンスープ", category: "スープ・飲み物の素", favorite: false },
+      { name: "コンソメスープ", category: "スープ・飲み物の素", favorite: false },
+      { name: "あさげ", category: "スープ・飲み物の素", favorite: false },
+      { name: "しじみスープ", category: "スープ・飲み物の素", favorite: false },
+      { name: "わかめスープ", category: "スープ・飲み物の素", favorite: false },
+      { name: "お吸い物", category: "スープ・飲み物の素", favorite: false },
+      { name: "麦茶", category: "スープ・飲み物の素", favorite: false },
+      { name: "緑茶", category: "スープ・飲み物の素", favorite: false },
+      { name: "ほうじ茶", category: "スープ・飲み物の素", favorite: false },
+      { name: "紅茶", category: "スープ・飲み物の素", favorite: false },
+      { name: "とんかつ", category: "加工食品・惣菜系", favorite: false },
+      { name: "牛脂", category: "加工食品・惣菜系", favorite: false },
+      { name: "チキン", category: "加工食品・惣菜系", favorite: false },
+      { name: "カニカマ", category: "加工食品・惣菜系", favorite: true },
+      { name: "かまぼこ", category: "加工食品・惣菜系", favorite: false },
+      { name: "なると", category: "加工食品・惣菜系", favorite: false },
+      { name: "ハム", category: "加工食品・惣菜系", favorite: false },
+      { name: "生ハム", category: "加工食品・惣菜系", favorite: false },
+      { name: "ベーコン", category: "加工食品・惣菜系", favorite: false },
+      { name: "ソーセージ", category: "加工食品・惣菜系", favorite: true },
+      { name: "チャーシュー", category: "加工食品・惣菜系", favorite: false },
+      { name: "キムチ", category: "加工食品・惣菜系", favorite: false },
+      { name: "ナムル", category: "加工食品・惣菜系", favorite: false },
+      { name: "紅しょうが", category: "加工食品・惣菜系", favorite: false },
+      { name: "ガリ", category: "加工食品・惣菜系", favorite: false },
+      { name: "ナゲット", category: "加工食品・惣菜系", favorite: false },
+      { name: "おでん", category: "加工食品・惣菜系", favorite: false },
+      { name: "ピザ用チーズ", category: "チーズ・乳製品・ジャム", favorite: false },
+      { name: "溶けるチーズ", category: "チーズ・乳製品・ジャム", favorite: false },
+      { name: "粉チーズ", category: "チーズ・乳製品・ジャム", favorite: false },
+      { name: "キャンディチーズ", category: "チーズ・乳製品・ジャム", favorite: false },
+      { name: "切れているバター", category: "チーズ・乳製品・ジャム", favorite: false },
+      { name: "無塩バター", category: "チーズ・乳製品・ジャム", favorite: false },
+      { name: "ピーナッツバター", category: "チーズ・乳製品・ジャム", favorite: false },
+      { name: "苺ジャム", category: "チーズ・乳製品・ジャム", favorite: false },
+      { name: "ブルーベリージャム", category: "チーズ・乳製品・ジャム", favorite: false },
+      { name: "クリームチーズ", category: "チーズ・乳製品・ジャム", favorite: false },
+      { name: "ローストビーフ", category: "肉", favorite: false },
+      { name: "牛タン", category: "肉", favorite: false },
+      { name: "カルビ", category: "肉", favorite: false },
+      { name: "豚バラ", category: "肉", favorite: true },
+      { name: "豚 焼肉用", category: "肉", favorite: false },
+      { name: "豚挽き300g", category: "肉", favorite: false },
+      { name: "豚汁用豚バラ", category: "肉", favorite: false },
+      { name: "豚ひき肉", category: "肉", favorite: false },
+      { name: "牛豚合挽肉", category: "肉", favorite: false },
+      { name: "牛肉 カレー用", category: "肉", favorite: false },
+      { name: "鶏肉もも", category: "肉", favorite: false },
+      { name: "手羽元", category: "肉", favorite: false },
+      { name: "鶏ガラ", category: "肉", favorite: false },
+      { name: "すき焼き肉", category: "肉", favorite: false },
+      { name: "たこ", category: "魚介", favorite: false },
+      { name: "明太子", category: "魚介", favorite: false },
+      { name: "しらす", category: "魚介", favorite: false },
+      { name: "いくら", category: "魚介", favorite: false },
+      { name: "サーモン", category: "魚介", favorite: false },
+      { name: "エビ", category: "魚介", favorite: false },
+      { name: "手巻き寿司セット", category: "魚介", favorite: false },
+      { name: "ヤクルト1000", category: "飲料・酒", favorite: true },
+      { name: "ピルクル", category: "飲料・酒", favorite: false },
+      { name: "ポカリ", category: "飲料・酒", favorite: false },
+      { name: "スポーツドリンク", category: "飲料・酒", favorite: false },
+      { name: "コーラ", category: "飲料・酒", favorite: false },
+      { name: "炭酸水", category: "飲料・酒", favorite: false },
+      { name: "ビール", category: "飲料・酒", favorite: false },
+      { name: "ビール エビス", category: "飲料・酒", favorite: false },
+      { name: "ビール無料券", category: "飲料・酒", favorite: false },
+      { name: "ノンアル", category: "飲料・酒", favorite: false },
+      { name: "オールフリー", category: "飲料・酒", favorite: false },
+      { name: "ウイスキー", category: "飲料・酒", favorite: false },
+      { name: "ハイボール4", category: "飲料・酒", favorite: false },
+      { name: "スパークリングワイン", category: "飲料・酒", favorite: false },
+      { name: "日本酒", category: "飲料・酒", favorite: false },
+      { name: "ロックアイス", category: "冷凍食品", favorite: false },
+      { name: "冷凍白身フライ", category: "冷凍食品", favorite: false },
+      { name: "冷凍パスタ", category: "冷凍食品", favorite: false },
+      { name: "冷凍うどん", category: "冷凍食品", favorite: false },
+      { name: "冷凍唐揚げ", category: "冷凍食品", favorite: false },
+      { name: "冷凍焼売", category: "冷凍食品", favorite: false },
+      { name: "冷凍枝豆", category: "冷凍食品", favorite: false },
+      { name: "冷凍ブロッコリー", category: "冷凍食品", favorite: false },
+      { name: "冷凍炒飯", category: "冷凍食品", favorite: false },
+      { name: "冷凍グラタン", category: "冷凍食品", favorite: false },
+      { name: "冷凍ピザ", category: "冷凍食品", favorite: false },
+      { name: "羊羹", category: "お菓子・つまみ", favorite: false },
+      { name: "キットカット", category: "お菓子・つまみ", favorite: false },
+      { name: "美味しい菓子", category: "お菓子・つまみ", favorite: false },
+      { name: "乾きもの", category: "お菓子・つまみ", favorite: false },
+      { name: "ベビースター", category: "お菓子・つまみ", favorite: false },
+      { name: "チョコ", category: "お菓子・つまみ", favorite: false },
+      { name: "ガスボンベ", category: "キッチン用品・消耗品", favorite: false },
+      { name: "ビニール袋", category: "キッチン用品・消耗品", favorite: false },
+      { name: "クッキングシート", category: "キッチン用品・消耗品", favorite: false },
+      { name: "zip袋Mサイズ", category: "キッチン用品・消耗品", favorite: false },
+      { name: "ゴミ袋", category: "キッチン用品・消耗品", favorite: false },
+      { name: "燃えないゴミ袋", category: "キッチン用品・消耗品", favorite: false },
+      { name: "ゴミ箱用消臭", category: "キッチン用品・消耗品", favorite: false },
+      { name: "キッチンペーパー", category: "キッチン用品・消耗品", favorite: false },
+      { name: "サランラップ", category: "キッチン用品・消耗品", favorite: false },
+      { name: "スポンジ", category: "キッチン用品・消耗品", favorite: false },
+      { name: "キュキュット", category: "キッチン用品・消耗品", favorite: false },
+      { name: "泡スプレー", category: "キッチン用品・消耗品", favorite: false },
+      { name: "食洗機洗剤", category: "キッチン用品・消耗品", favorite: false },
+      { name: "水切り", category: "キッチン用品・消耗品", favorite: false },
+      { name: "油固め剤", category: "キッチン用品・消耗品", favorite: false },
+      { name: "台所洗剤", category: "キッチン用品・消耗品", favorite: false },
+      { name: "たわし靴洗い", category: "キッチン用品・消耗品", favorite: false },
+      { name: "コロコロ", category: "掃除・洗剤", favorite: false },
+      { name: "バスタブ洗剤", category: "掃除・洗剤", favorite: false },
+      { name: "お風呂洗剤", category: "掃除・洗剤", favorite: false },
+      { name: "お風呂排水洗剤", category: "掃除・洗剤", favorite: false },
+      { name: "カビキラー", category: "掃除・洗剤", favorite: false },
+      { name: "ネット", category: "掃除・洗剤", favorite: false },
+      { name: "靴洗剤", category: "掃除・洗剤", favorite: false },
+      { name: "窓用スプレー", category: "掃除・洗剤", favorite: false },
+      { name: "激落ちくん", category: "掃除・洗剤", favorite: false },
+      { name: "激落ちくん水", category: "掃除・洗剤", favorite: false },
+      { name: "床掃除", category: "掃除・洗剤", favorite: false },
+      { name: "消臭力", category: "掃除・洗剤", favorite: false },
+      { name: "絆創膏", category: "衛生・美容", favorite: false },
+      { name: "シャンプー", category: "衛生・美容", favorite: false },
+      { name: "マスク", category: "衛生・美容", favorite: false },
+      { name: "ボディソープ", category: "衛生・美容", favorite: false },
+      { name: "ハンドソープ", category: "衛生・美容", favorite: false },
+      { name: "歯ブラシ", category: "衛生・美容", favorite: false },
+      { name: "歯磨き粉", category: "衛生・美容", favorite: false },
+      { name: "ヘアワックス", category: "衛生・美容", favorite: false },
+      { name: "化粧水", category: "衛生・美容", favorite: false },
+      { name: "樹ボディソープARAU", category: "衛生・美容", favorite: false },
+      { name: "樹自由帳", category: "子ども・学校用品", favorite: false },
+      { name: "樹連絡ノート", category: "子ども・学校用品", favorite: false },
+      { name: "樹漢字帳120字 2まろ", category: "子ども・学校用品", favorite: false },
+      { name: "樹算数5mm方眼", category: "子ども・学校用品", favorite: false },
+      { name: "HB3本", category: "子ども・学校用品", favorite: false },
+      { name: "樹墨", category: "子ども・学校用品", favorite: false },
+      { name: "樹 上履き24.5", category: "子ども・学校用品", favorite: false },
+      { name: "A3ファイル", category: "子ども・学校用品", favorite: false },
+      { name: "樹イヤフォン", category: "子ども・学校用品", favorite: false },
+      { name: "樹キーチェーン", category: "子ども・学校用品", favorite: false },
+      { name: "ポチ袋", category: "子ども・学校用品", favorite: false },
+      { name: "赤5mm", category: "子ども・学校用品", favorite: false },
+      { name: "青5mm", category: "子ども・学校用品", favorite: false },
+      { name: "めるお用シート", category: "ペット用品", favorite: false },
+      { name: "猫用おやつ", category: "ペット用品", favorite: false },
+      { name: "単三電池", category: "電池・電球・電気小物", favorite: false },
+      { name: "単四電池", category: "電池・電球・電気小物", favorite: false },
+      { name: "LR1130", category: "電池・電球・電気小物", favorite: false },
+      { name: "電球色 LED40白熱電球40w形相当", category: "電池・電球・電気小物", favorite: false },
+      { name: "40形レフ屋内用パナ100v36w", category: "電池・電球・電気小物", favorite: false },
+      { name: "ミニクリプトン電球100v 60形54wまで", category: "電池・電球・電気小物", favorite: false },
+      { name: "ミニクリ40W お風呂用", category: "電池・電球・電気小物", favorite: false },
+      { name: "二股タップ", category: "電池・電球・電気小物", favorite: false }
+    ];
+
+    const storageKey = "shopping-check-app-v2";
+    const byId = (id) => document.getElementById(id);
+    const normalize = (value) => value.trim().replace(/\s+/g, " ").toLowerCase();
+    let state = loadState();
+    let toastTimer;
+
+    function makeProduct(raw) {
+      const name = raw.name.trim();
+      const category = raw.category.trim() || "その他";
+      return {
+        id: raw.id || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        name,
+        category,
+        favorite: Boolean(raw.favorite),
+        selected: Boolean(raw.selected),
+        bought: Boolean(raw.bought)
+      };
+    }
+
+    function mergeProducts(products) {
+      const map = new Map();
+      products.forEach((product) => {
+        const key = `${normalize(product.name)}::${normalize(product.category)}`;
+        if (!map.has(key)) {
+          map.set(key, makeProduct(product));
+          return;
+        }
+        const existing = map.get(key);
+        existing.favorite = existing.favorite || product.favorite;
+        existing.selected = existing.selected || product.selected;
+        existing.bought = existing.bought && product.bought;
+      });
+      return [...map.values()];
+    }
+
+    function loadState() {
+      const fallback = {
+        products: mergeProducts(defaultProducts),
+        closedCategories: {},
+        shoppingClosed: false
+      };
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey));
+        if (!saved || !Array.isArray(saved.products)) return fallback;
+        return {
+          products: mergeProducts(saved.products),
+          closedCategories: saved.closedCategories || {},
+          shoppingClosed: Boolean(saved.shoppingClosed)
+        };
+      } catch {
+        return fallback;
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(storageKey, JSON.stringify(state));
+    }
+
+    function productSort(a, b) {
+      return a.name.localeCompare(b.name, "ja");
+    }
+
+    function groupedProducts(products) {
+      const groups = new Map();
+      products.forEach((product) => {
+        if (!groups.has(product.category)) groups.set(product.category, []);
+        groups.get(product.category).push(product);
+      });
+      return [...groups.entries()].map(([category, items]) => [category, items.sort(productSort)]);
+    }
+
+    function filteredProducts() {
+      const query = normalize(byId("search").value);
+      if (!query) return state.products;
+      return state.products.filter((product) => {
+        return normalize(product.name).includes(query) || normalize(product.category).includes(query);
+      });
+    }
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
+
+    function render() {
+      const visibleProducts = filteredProducts();
+      const favorites = visibleProducts.filter((product) => product.favorite).sort(productSort);
+      const regularGroups = groupedProducts(visibleProducts);
+      const root = byId("products-root");
+      const categories = [...new Set(state.products.map((product) => product.category))];
+
+      byId("category-list").innerHTML = categories.map((category) => `<option value="${escapeHtml(category)}"></option>`).join("");
+
+      const sections = [];
+      if (favorites.length) sections.push(renderSection("よく買うもの", favorites, "favorites"));
+      regularGroups.forEach(([category, products]) => {
+        sections.push(renderSection(category, products, category));
+      });
+
+      root.innerHTML = sections.length
+        ? sections.join("")
+        : `<section class="section"><div class="empty">該当する商品がありません。</div></section>`;
+
+      renderShoppingList();
+      updateCounts();
+      wireDynamicButtons();
+      saveState();
+    }
+
+    function renderSection(title, products, key) {
+      const closed = Boolean(state.closedCategories[key]);
+      return `
+        <section class="section ${closed ? "is-closed" : ""}" data-section="${escapeHtml(key)}">
+          <button class="section-head" type="button" data-toggle="${escapeHtml(key)}">
+            <span class="section-title"><span>${escapeHtml(title)}</span><span class="badge">${products.length}</span></span>
+            <span class="chevron">⌄</span>
+          </button>
+          <div class="section-body">
+            <div class="items">
+              ${products.map(renderProduct).join("")}
+            </div>
+          </div>
+        </section>`;
+    }
+
+    function renderProduct(product) {
+      return `
+        <div class="item" data-id="${product.id}">
+          <input type="checkbox" aria-label="${escapeHtml(product.name)}を買うものに追加" data-select="${product.id}" ${product.selected ? "checked" : ""}>
+          <div>
+            <div class="item-name">${escapeHtml(product.name)}</div>
+            <div class="item-meta">${escapeHtml(product.category)}</div>
+          </div>
+          <button class="icon-btn ${product.favorite ? "is-fav" : ""}" type="button" title="よく買うもの" aria-label="よく買うものを切り替え" data-favorite="${product.id}">${product.favorite ? "★" : "☆"}</button>
+          <button class="icon-btn danger" type="button" title="削除" aria-label="${escapeHtml(product.name)}を削除" data-delete="${product.id}">×</button>
+        </div>`;
+    }
+
+    function renderShoppingList() {
+      const list = byId("shopping-list");
+      const selected = state.products.filter((product) => product.selected).sort((a, b) => {
+        if (a.bought !== b.bought) return a.bought ? 1 : -1;
+        return a.name.localeCompare(b.name, "ja");
+      });
+
+      byId("shopping-badge").textContent = selected.length;
+      document.querySelector(".shopping-pane").classList.toggle("is-closed", state.shoppingClosed);
+
+      list.innerHTML = selected.length
+        ? selected.map((product) => `
+            <label class="buy-row ${product.bought ? "is-bought" : ""}">
+              <input type="checkbox" data-bought="${product.id}" ${product.bought ? "checked" : ""}>
+              <span class="buy-name">${escapeHtml(product.name)}</span>
+              <span class="item-meta">${escapeHtml(product.category)}</span>
+            </label>
+          `).join("")
+        : `<div class="empty">商品にチェックを入れると、ここに追加されます。</div>`;
+    }
+
+    function updateCounts() {
+      const selected = state.products.filter((product) => product.selected);
+      byId("count-needed").textContent = selected.filter((product) => !product.bought).length;
+      byId("count-bought").textContent = selected.filter((product) => product.bought).length;
+      byId("count-products").textContent = state.products.length;
+    }
+
+    function wireDynamicButtons() {
+      document.querySelectorAll("[data-toggle]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const key = button.dataset.toggle;
+          state.closedCategories[key] = !state.closedCategories[key];
+          render();
+        });
+      });
+
+      document.querySelectorAll("[data-select]").forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          const product = findProduct(checkbox.dataset.select);
+          product.selected = checkbox.checked;
+          if (!product.selected) product.bought = false;
+          render();
+        });
+      });
+
+      document.querySelectorAll("[data-bought]").forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          const product = findProduct(checkbox.dataset.bought);
+          product.bought = checkbox.checked;
+          render();
+        });
+      });
+
+      document.querySelectorAll("[data-favorite]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const product = findProduct(button.dataset.favorite);
+          product.favorite = !product.favorite;
+          showToast(product.favorite ? "よく買うものに追加しました" : "よく買うものから外しました");
+          render();
+        });
+      });
+
+      document.querySelectorAll("[data-delete]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const product = findProduct(button.dataset.delete);
+          if (!confirm(`「${product.name}」を削除しますか？`)) return;
+          state.products = state.products.filter((item) => item.id !== product.id);
+          showToast("商品を削除しました");
+          render();
+        });
+      });
+    }
+
+    function findProduct(id) {
+      return state.products.find((product) => product.id === id);
+    }
+
+    function addProduct(event) {
+      event.preventDefault();
+      const nameInput = byId("new-name");
+      const categoryInput = byId("new-category");
+      const favoriteInput = byId("new-favorite");
+      const name = nameInput.value.trim();
+      const category = categoryInput.value.trim() || "その他";
+      if (!name) return;
+
+      const existing = state.products.find((product) => normalize(product.name) === normalize(name) && normalize(product.category) === normalize(category));
+      if (existing) {
+        existing.favorite = existing.favorite || favoriteInput.checked;
+        showToast("重複していたので既存の商品に統合しました");
+      } else {
+        state.products.push(makeProduct({ name, category, favorite: favoriteInput.checked }));
+        showToast("商品を追加しました");
+      }
+
+      nameInput.value = "";
+      favoriteInput.checked = false;
+      nameInput.focus();
+      render();
+    }
+
+    function showToast(message) {
+      const toast = byId("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 1800);
+    }
+
+    byId("search").addEventListener("input", render);
+    byId("add-form").addEventListener("submit", addProduct);
+    byId("clear-bought").addEventListener("click", () => {
+      state.products.forEach((product) => {
+        if (product.bought) {
+          product.selected = false;
+          product.bought = false;
+        }
+      });
+      render();
+    });
+    byId("clear-all").addEventListener("click", () => {
+      if (!state.products.some((product) => product.selected)) return;
+      if (!confirm("買うものリストを全て外しますか？")) return;
+      state.products.forEach((product) => {
+        product.selected = false;
+        product.bought = false;
+      });
+      render();
+    });
+    document.querySelector("[data-static-toggle='shopping']").addEventListener("click", () => {
+      state.shoppingClosed = !state.shoppingClosed;
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
